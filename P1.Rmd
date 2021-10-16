@@ -1,0 +1,45 @@
+---
+title: "Practice 1"
+author: "Victor"
+date: "2021/10/12"
+output: html_document
+---
+
+#insert table
+```{r}
+rairuoho <- read.table("C:/Users/user/Downloads/rairuoho.txt", header=T, sep='\t', dec='.')
+rairuoho
+```
+#Replace "nutrient" with "enriched"
+```{r}
+rairuoho$treatment <- ifelse( rairuoho$treatment == "nutrient", "enriched", "water")
+rairuoho
+```
+#Reformat the table
+```{r}
+library(tidyr)
+rairuoho
+rairuoho_reform <- rairuoho %>% pivot_longer(day3:day8, names_to = "Day", values_to = "Length")
+rairuoho_reform
+```
+# Merge variables
+```{r}
+rairuoho_reform_2 <- rairuoho_reform %>% unite("Spatial coordinates", 4:5, remove = TRUE )
+rairuoho_reform_2
+```
+##remove row and column
+```{r}
+library(dplyr)
+library(tidyr)
+selected <- select(rairuoho_reform_2, -row, -column)
+selected
+```
+
+###Extra manipulation: Change column order
+```{r}
+library(dplyr)
+selected
+colnames(selected)
+new_table <- selected[, c(5, 1, 6, 2, 3, 4)]
+new_table
+```
