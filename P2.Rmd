@@ -1,0 +1,61 @@
+---
+title: "Practice 2"
+author: "Victor Tang"
+date: "2021/10/19"
+output: html_document
+---
+```{r}
+library(dplyr)
+library(tidyr)
+```
+
+#Create a data frame
+```{r}
+before_diet <- c(104, 95, 87, 77, 112)
+after_diet <- c(96, 91, 81, 75, 118)
+A <- data.frame(before_diet, after_diet)
+row.names(A) <-c("subject_1", "subject_2", "subject_3", "subject_4", "subject_5")
+A
+str(A)
+typeof(before_diet)
+typeof(after_diet)
+```
+#Reformat the dataframe
+```{r}
+BUBBLE_DIET_1 <- A %>% pivot_longer(1:2, names_to = "time_of_measurement", values_to = "weight")
+BUBBLE_DIET_1
+typeof(BUBBLE_DIET_1$weight)
+time_of_measurement <- as.factor(BUBBLE_DIET_1$time_of_measurement)
+class(time_of_measurement)
+typeof(time_of_measurement)
+```
+
+#[1] a vector of character extracting the row names of the table previously created
+```{r}
+E1 <- row.names(A)
+E1
+
+````
+
+
+#[2] a numeric vector (double) indicating the weight loss (in %) of each subject (can be positive or negative)
+```{r}
+
+E2 <- data.frame(subject = E1, weight_loss = (after_diet - before_diet)/before_diet*100)
+E2
+
+```
+
+#creat a list WEIGHT_LOSS
+```{r}
+WEIGHT_LOSS <- list(E1=E1, E2=E2)
+WEIGHT_LOSS
+str(WEIGHT_LOSS)
+```
+
+#Create a list BUBBLE_DIET
+```{r}
+BUBBLE_DIET <- list (BUBBLE_DIET_1, WEIGHT_LOSS)
+BUBBLE_DIET
+str(BUBBLE_DIET)
+```
