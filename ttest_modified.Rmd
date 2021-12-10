@@ -1,0 +1,57 @@
+---
+title: "ttest_modified"
+author: "Victor Tang"
+date: "2021/12/8"
+output: html_document
+---
+
+Read dataset "rairuoho"
+```{r}
+rairuoho<-read.table('https://www.dipintothereef.com/uploads/3/7/3/5/37359245/rairuoho.txt',header=T, sep="\t", dec=".")
+
+```
+
+The t.test function designed for two samples, for paired or non-paired samples. For paired samples, it will go to the set of paired test formula; for unpaired one, there are two sets where equal or unequal population variance.  
+```{r}
+ttest <- function(A, B, paired = c('TRUE', 'FALSE'), mu, var.equal = c('TRUE', 'FALSE', "NA")){
+  if(paired == TRUE){ 
+  C <- A - B
+  t_value=((sum(A)-sum(B)-mu)/length(A))/(sd(C)/length(A)^0.5)
+  df = length(A)-1
+  p= pt(t_value, df, lower.tail = T)
+  paste('t=', t_value, ', degree_of_freedom=', df, ' , p = ', p)
+  }
+  else{if(var.equal == TRUE){
+    psv = ((length(A)-1)*var(A)+(length(B)-1)*var(B))/(length(A)+length(B)-2)
+    t_value = (mean(A)-mean(B))/(psv((1/length(A))+(1/(length(B)))))
+    df= length(A)+length(B)-2
+    p= pt(t_value, df, lower.tail = T)
+    paste('t=', t_value, ', degree_of_freedom=', df, ' , p = ', p)
+  }else{
+    t_value = (mean(A)-mean(B))/((var(A)/length(A)+var(B)/length(B))^0.5)
+  df=((var(A)/length(A)+var(B)/length(B))^2)/( (var(A)/length(A))^2/(length(A)-1)+ (var(B)/length(B))^2/(length(B)-1) )
+  p= pt(t_value, df, lower.tail = T)
+  paste('t=', t_value, ', degree_of_freedom=', df, ' , p = ', p)
+  }
+  }
+}
+```
+
+Read the samples we want to test, in this case, I want to compare the same individual without nutrient treatment (water), it they have grow bigger or not, so use paired t test (paired = TURE)
+```{r}
+library(dplyr)
+
+D3<-rairuoho%>%select(day3, treatment)%>%filter(treatment=="water")
+D7<-rairuoho%>%select(day7, treatment)%>%filter(treatment=="water")
+
+```
+
+test 
+```{r}
+ttest(D3$day3, D7$day7, paired = TRUE, 0, NA)
+```
+
+To check my answer by the t.test() in r
+```{r}
+t.test(D3$day3, D7$day7, paired = TRUE)
+```
