@@ -1,0 +1,103 @@
+---
+title: "Practic3 M1"
+author: "Victor Tang"
+date: "2021/12/24"
+output: html_document
+---
+```{r}
+library(vegan)
+library(ade4)
+library(gclus)
+library(qgraph)
+library(factoextra)
+library(fpc)
+library(ggplot2)
+library(gridExtra)
+library(e1071)
+library(corrplot)
+library(tree)
+library(rpart)
+library(rattle)
+library(randomForest)
+library(caret)
+library(devtools)
+library(mvabund)
+library(dplyr)
+library(gclus)
+```
+Open the dataset "Tikus", from the package "mvabund". The tikus dataset is a list consist of 2 list, one is the species abundance (60 observations * 75 variables) data frame, and the x (year) (60*2 data frame).
+```{r}
+data(tikus)
+tikus
+head(tikus)
+str(tikus)
+```
+Separate the two data frames. Add a column "year" in the abundance data frame from x (year). Select the observations in the year 1981, 1983 and 1985 (81, 83, 85), finally remove the year column. Here is the prepared dataset for our analysis.
+```{r}
+sp_abu <- tikus$abund
+year <- tikus$x
+
+sp_abu$time <- year$time
+selected <- sp_abu  %>%
+  filter(year == 81 | year == 83 | year == 85)
+
+selected$time <- NULL
+selected
+```
+Use the function vegdist() from the package "vegan", to create a Bray-Curtis dissimilarity matrix.
+```{r}
+selected.bc <- vegdist(selected, method = "bray")
+selected.bc
+```
+The matrix is visualised into a heatmap, as the coldiss() function from the package "gclus" is not working, therefore I copied a coldiss function from online, to produce the heatmap
+```{r}
+coldiss <- function(D, nc = 4, byrank = TRUE, diag = FALSE)
+{
+  require(gclus)
+  
+  if (max(D)>1) D <- D/max(D)
+  
+  if (byrank) {
+    spe.color <- dmat.color(1-D, cm.colors(nc))
+  }
+  else {
+    spe.color <- dmat.color(1-D, byrank=FALSE, cm.colors(nc))
+  }
+  
+  spe.o <- order.single(1-D)
+  speo.color <- spe.color[spe.o, spe.o]
+  
+  op <- par(mfrow=c(1,2), pty="s")
+  
+  if (diag) {
+    plotcolors(spe.color, rlabels=attributes(D)$Labels, 
+               main="Dissimilarity Matrix", 
+               dlabels=attributes(D)$Labels)
+    plotcolors(speo.color, rlabels=attributes(D)$Labels[spe.o], 
+               main="Ordered Dissimilarity Matrix", 
+               dlabels=attributes(D)$Labels[spe.o])
+  }
+  else {
+    plotcolors(spe.color, rlabels=attributes(D)$Labels, 
+               main="Dissimilarity Matrix")
+    plotcolors(speo.color, rlabels=attributes(D)$Labels[spe.o], 
+               main="Ordered Dissimilarity Matrix")
+  }
+  
+  par(op)
+}
+
+
+coldiss(selected.bc, byrank=F,diag=T)
+
+```
+
+Transpose the data frame by t(), produce a Jaccard dissimilarity matrix using vegdist, data are binary transformed. qgraph() to produce the network of species co-occurence.
+```{r}
+selected.t.bi <- vegdist(t(selected),'jac', binary=T)
+qgraph(1-selected.t.bi, layout='spring', vsize=4)
+```
+
+
+
+
