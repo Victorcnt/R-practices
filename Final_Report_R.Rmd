@@ -1,0 +1,231 @@
+---
+title: "The connection between solar activity and glass eel catches in Taiwan"
+author: "Victor Tang, Lucian Wu"
+date: "2022/1/4"
+output: html_document
+---
+
+
+**1. Aim**  
+
+To find out if there’s any connection between sunspot number and glass eel catches, including:  
+1)	Find out if there is any positive correlation between the number of sunspot and the glass eel catches in Taiwan, the juvenile of *Anguilla japonica*.<br />  
+2)	Are the catches of glass eel in Taiwan are significantly different between low and high sunspot periods.
+*H0*: high sunspot periods are directly associated with higher glass eel catches in Taiwan than the low sunspot period.
+*H1*: There is no significantly difference in catches associated with high and low sunspot period.<br />
+3)	Any lag response of glass eel catches in Taiwan and the solar activity.
+
+
+**2. Abstract**<br />
+Japanese eel is an important aquaculture species in Taiwan, however the industry can only relied on wild catches of small eel, the elvers or glass eels. Therefore, it is necessary to understand what factors will affect the supply the wild-caught glass eel. We herein examine the connection between the solar activities (sunspots) and glass eel catches in Taiwan. We found out that there is moderate positive correlation between them, no significantly difference in catches associated with solar minimum and maximum and no lag response of glass eel catches in Taiwan due to solar activities.<br />
+
+```{r, message = FALSE, warning = FALSE, echo = FALSE}
+library(openxlsx)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(lmtest)
+library(vars)
+sun.eel <- read.xlsx("C:/Users/user/Desktop/NTU/2021 fall/魚類耳石的生態應用/Sun.eel.xlsx")
+```
+
+
+**3. Background/Introduction**
+
+  The Japanese eel, *Anguilla japonica*, is an important species in aquaculture in eastern Asia, the main consumer regions are China, Japan, Taiwan and Japan. Due to the special spawning behavior of the eel, where sexually mature eels mate and spawn in the vicinity of deep seamounts near Guam, no eels have been successfully brood and risen in captive environment. Therefore, the eel aquaculture industry is totally relied on wild catches of elvers (commonly called as glass eel). 
+
+  In nature, the hatched juveniles are passive transported by the north equatorial current and the Kuroshio to the coastal regions of eastern Asia, and develop into elvers. During winter to spring, people in this region will catch the glass eel and sell them to aquaculture industry. It is observed that the catches fluctuates along a time series. Thus, it is important to understand what factors cause the fluctuation. It is suspected that the sunspot number is positively correlated to the amount of glass eel catches (Tzeng, W.-N., pers. comm.) as the annual data of both might show some connection between (Plot 5.1). 
+  
+  Sunspots as one of the effect of solar activity, which are the result of change in sun’s magnetic field. The Solar cycle is determined by counting the number of sunspots. The beginning of a solar cycle is a solar minimum, when the Sun has the least sunspots. Over time, the number of sunspots increases, in the middle of the solar cycle is the solar maximum. A cycle ends when it fades back to the solar minimum. Each cycle is estimated approximately 11 years (Nasa, 2021). The change in sunspot directly affects Earth’s biosphere, caused fluctuations of the Earth’s magnetism, temperature, radiance intensity, and energy fluxes, has already been tested, whereas several studies have related fish catch with solar cycles (Sánchez-Santillán *et al.*, 2019).
+  
+  
+  In the present report, we use R programming language to analyze:  
+  **1.** if there is any positive correlation between the number of sunspot and the catches amount of glass eel;  
+  **2.** if glass eel catches of solar minimum and maximum periods are significantly different;  
+  **3.** Any lags between glass eel catches and sunspot (solar) activity.
+
+
+**4. Methods**
+
+4.1 Data source<br />
+The dataset with chronological data of number of sunspot and the catch amount of glass-eel (1000 pieces/individuals) in Taiwan recorded from the year 1967 to 2014, is provided by professor Wann-Nian Tzeng and slightly modified in excel. It is imported to R-studio as a data frame with 48 observations of 3 variables.
+```{r, warning = FALSE}
+sun.eel <- read.xlsx("C:/Users/user/Desktop/NTU/2021 fall/魚類耳石的生態應用/Sun.eel.xlsx")
+```
+
+4.2 In R Studio<br />
+Any necessary manipulations and statistical analysis are done in R, by R-based functions or commands except where indicated. The excel file is inserted into R-markdown (RMD) by the package “openxlsx” (NULL). Data are trimmed by functions based on “dplyr” (Hadley et al., 2018) language. Plotting and visualisations are done with package “ggplot2” (Wickham, 2016). Cross correlation was done by functions of tseries (Trapletti & Hornik, 2021). 
+```{r, warning = FALSE}
+library(openxlsx)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(lmtest)
+library(vars)
+```
+
+
+**5. Data analysis with R**
+
+5.1 The summary of the sun.eel dataset.
+```{r, warning = FALSE}
+summary(sun.eel)
+```
+
+5.2 The fluctuation of sunspot numbers, and glass eel catches in Taiwan from 1967 to 2014, is shown below.
+```{r, warning = FALSE}
+scale.factor <- max(sun.eel$`Glass.eel.catch.(*1000)`) * 1000 / max(sun.eel$Sunspot.number)
+
+plot <- ggplot(sun.eel, aes(x = Year)) + 
+  geom_line(aes(y = `Glass.eel.catch.(*1000)`* 1000, colour = "Glass eel catches")) + 
+  geom_line(aes(y = Sunspot.number * scale.factor, colour = "Sunspot number")) + 
+  scale_y_continuous("Glass eel catches", sec.axis = sec_axis(~./ scale.factor, name = "Sunspot number"))
+
+plot
+```
+
+5.3 Plot the glass eel catches in Taiwan versus sunspot numbers.
+```{r, warning = FALSE}
+ggplot(sun.eel, aes(Sunspot.number, `Glass.eel.catch.(*1000)`)) + 
+  geom_point() + 
+  ggtitle("Glass eel catches vs. Sunspot Number") + 
+  xlab("Sunspot Number") + ylab("Glass-eel catches (*1000 individuals)")
+```
+
+5.4 Simple linear regression  
+  Due to only have two variables, sunspot number and glass eel catches in Taiwan, therefore we chose to run simple regression. Before conducting any parametric analyses, it is essential validate the data if it meets certain assumptions.
+  
+1. Normal distribution: it could be done by *shapiro.test()* of sunspot number and glass eel catches; however, it shows that both p-value of the Shapiro-Wilk normality test is less than 0.05, the hypothesis of normally distributed of both data is rejected.
+```{r, warning = FALSE}
+shapiro.test(sun.eel$Sunspot.number)
+shapiro.test(sun.eel$`Glass.eel.catch.(*1000)`)
+```
+  
+2. Degrees of homoscedasticity: perform by *var.test()*, which is the f-test in R; however, the result is much less than the significance level 0.05, homoscedasticity is rejected.
+```{r, warning = FALSE}
+var.test(sun.eel$Sunspot.number, sun.eel$`Glass.eel.catch.(*1000)`)
+```
+
+```{r,message = FALSE, warning = FALSE}
+ggplot(sun.eel, aes(x = Sunspot.number, y = `Glass.eel.catch.(*1000)`)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  xlab("Sunspot Number") + ylab("Glass-eel catches (*1000 individuals)")
+
+lm(`Glass.eel.catch.(*1000)` ~ Sunspot.number, data = sun.eel)
+summary(lm(`Glass.eel.catch.(*1000)` ~ Sunspot.number, data = sun.eel))
+```
+
+Two correlation coefficients are calculated to check the degree of correlation between the two variables. As the parametric characters of the data are rejected by the t-test and F-test, it is more suitable to provide the Spearman's correlation *rho* value to demonstrate the degree of correlation, the rho is 0.304 as shown, which is a weak moderate degree. The Pearson correlation correlation coefficient is also calculate, result is a moderate degree of 0.395. 
+```{r, warning = FALSE}
+cor.test(sun.eel$Sunspot.number, sun.eel$`Glass.eel.catch.(*1000)`, method = "spearman")
+cor.test(sun.eel$Sunspot.number, sun.eel$`Glass.eel.catch.(*1000)`)
+```
+
+5.5 Compare the difference of selected groups  
+We use the 1st and 3rd quantile (shown in 5.1) to define the boundary of solar minimum (low sunspot number) and solar maximum (high sunspot number), respectively, then we can isolate two groups, a low (sun.eel.q1) and high sunspot (sun.eel.q3) group. The group "sun.eel.others" are the glass eel catches recorded in years with moderate level of sunspots. After the selection of these two groups, we are going to test whether the means of the two groups are significantly different.
+
+A simple plot to visualize these data is shown below. The red and blue dots represent record from the low and high sunspot group, respectively. Grey dots are the remaining data associated with the interquantile range of sunspot.
+```{r, warning = FALSE}
+sun.eel.q1 <- sun.eel %>% filter(Sunspot.number <= 26)
+sun.eel.q3 <- sun.eel %>% filter(Sunspot.number >= 104)
+sun.eel.others <- sun.eel %>% filter(Sunspot.number > 26 & Sunspot.number < 104)
+
+plot.ext <- ggplot() +
+  geom_point(data = sun.eel.q3, aes(Sunspot.number, `Glass.eel.catch.(*1000)`, colour = "High")) +
+  geom_point(data = sun.eel.q1, aes(Sunspot.number, `Glass.eel.catch.(*1000)`, colour = "Low")) +
+  geom_point(data = sun.eel.others, aes(Sunspot.number, `Glass.eel.catch.(*1000)`, colour = "Moderate")) +
+  scale_color_manual(values = c("blue", "red", "gray")) + 
+  ggtitle("Comparison of selected groups") + 
+  xlab("Sunspot Number") + ylab("Glass-eel catches (*1000 individuals)")
+plot.ext
+```
+
+In this case, we have to confirm whether the data are normally distributed and have equal variances. Both are test by the R-base function *shapiro.test* and *var.test*.
+```{r, warning = FALSE}
+shapiro.test(sun.eel.q1$Sunspot.number)
+shapiro.test(sun.eel.q1$`Glass.eel.catch.(*1000)`)
+shapiro.test(sun.eel.q3$Sunspot.number)
+shapiro.test(sun.eel.q3$`Glass.eel.catch.(*1000)`)
+var.test(sun.eel.q1$Sunspot.number,sun.eel.q1$`Glass.eel.catch.(*1000)`)
+```
+
+However, most of the data are not really showing the characteristic of parametric data, where the *p* value of both Shapiro-Wilk normality test and F test are less than 0.05, the hypothesis of normally distributed and equal variance of these data are rejected. Therefore, we adopted a non-parametric test of mean, the *Wilcoxon Rank-Sum test* to test if there is any difference between the two groups.
+
+*H0*: high sunspot periods are directly associated with higher glass eel catches in Taiwan than the low sunspot period.<br />  
+*H1*: There is no significantly difference in catches associated with high and low sunspot period.
+```{r, warning = FALSE}
+wilcox.test(sun.eel.q1$`Glass.eel.catch.(*1000)`, sun.eel.q3$`Glass.eel.catch.(*1000)`)
+```
+
+The p-value of the Wilcoxon rank-sum test of the two group of data is much higher than 0.05, therefore we reject the hypothesis that the higher sunspot activity will cause a higher glass eel catches in Taiwan, and vice versa. In the boxplot of these two group, it is notable that the high-sunspot group has an extremely large standard deviation among the data. This should be one of the reason that the low- and high- sunspot group have no significant difference.
+```{r, warning = FALSE}
+sd(sun.eel.q3$`Glass.eel.catch.(*1000)`)
+
+ggplot() + 
+  geom_boxplot(data = sun.eel.q1, aes("Low" , `Glass.eel.catch.(*1000)`)) + 
+  geom_boxplot(data = sun.eel.q3, aes("High" , `Glass.eel.catch.(*1000)`)) + 
+  ggtitle("Boxplot") + 
+  xlab("Sunspot Level")
+```
+
+5.6 Cross correlation  
+Cross-correlation is used to assess how similar are two different data, which generalize of the correlation measure as it takes into account the lag of one signal relative to the other, especially in time series data. In our case, the chronological data of sunspot number and glass eel catches in Taiwan are time series data, and visually show the characteristic of periodicity. Therefore, it is necessary to consider the possible delay (lay) or advance (response earlier) of signals of a variable due to the change of another. In our case, cross-correlation should be adopted to check if there is delay or advance response of glass eel catches in Taiwan due to the change in sunspot number.
+
+In cross correlation, lag with large value indicates that there is strong similarity between two signals at the overlap position. In the cross-correlation plots with 6, 13 & 48 lags, we could see that lag +11(years) has highest value (ACF value 0.475), while lag 0 (year) has 2nd highest value (0.395), and follow by lag +1 (0.380), all of these value are higher than the 95% confidence interval thus these value are notably strong. It is mentioned the sunspot period is around 11 years in many literatures. Back to the cross-correlation plot, the two highest maximum is at lag+11 and lag 0, therefore we could infer there is **no lag** in time, the rise in sun spot almost immediately follow by the increase in glass eel catches at any year. For lag +11, it represents it the glass eel catches are fitted to the next period. However, considering the value of lag +1 is just slightly less than the lag 0, it is possible that there is still a time lag occur between lag 0 to lag +1. However, the maximum resolution of our data is one year, we cannot explore the delay or advance occur in monthly or half-yearly scale.
+```{r, warning = FALSE, results = "hide"}
+Sunspot <- sun.eel$Sunspot.number
+Glass.eel <- sun.eel$`Glass.eel.catch.(*1000)`
+
+par(mfrow = c(1, 3))
+
+ccf(Sunspot, Glass.eel, ylab = "Cross-Correlation", lag = 6, 
+    main = c("Sunspot & Glass.eel, ", "\n", "Lag = 6"))
+ccf(Sunspot, Glass.eel, ylab = "Cross-Correlation", 
+    main = c("Sunspot & Glass.eel, ", "\n", "Lag = 13"))
+ccf(Sunspot, Glass.eel, ylab = "Cross-Correlation", lag = 48, 
+    main = c("Sunspot & Glass.eel, ", "\n", "Lag = 48"))
+
+dev.off()
+```
+
+```{r, warning = FALSE}
+print(ccf(Sunspot, Glass.eel, lag = 6, plot = "FALSE"))
+```
+
+
+**6. Discussion**
+
+ Although the time series data of the yearly-counted sunspots and glass eel catches in Taiwan from 1967 to 2014 **superficially** shows a correlation, where the rise of one variable follow by the rise of another, and vice versa. However, without any statistical analysis it is not possible to conclude with any concrete conclusion. To check the correlation of the two variable, we performed the non-parametric *Spearman's correlation* test to obtain the correlation coefficient *rho*, however the *rho* value only marginally reached the condition of moderately correlated. Yet, our data is heteroscedastic. 
+
+ Due to the reason that the glass eel catches in Taiwan versus sunspot number is a time-series dataset, it is very possible that there are delay or even advance in response of catches to the solar activity. Therefore, cross correlation is necessary to check the lag of response of the catches. However, as explain in section **5.6**, it show no lags as value of lag 0 is the second highest. Therefore, lagging of response should not be the cause of the data heteroscedasticity, also the aforementioned correlation coefficient is able to reflect the connection between two variables. It is also notable that the ACF value of lag 0 and lag +1 is very similar but the latter is slightly lower. We suspect that the true lag occurs within 0 and +1, which refers to the lag of response in a half-yearly or even smaller scale. However, the maximum time resolution is a yearly scale, thus we cannot explore any change and response within a smaller time scale. We suggested that monthly data could be more efficient to understand the lag response and correlation between solar activity and glass eel catches.
+
+ It is estimated that the sunspot/solar cycle is around 11 years. We further performed auto-correlation analysis to ensure our sunspot reflect this number. Auto-correlation can verify the presence of cycles and determine their durations. In this case, the highest ACF values stand at lag 0 and lag +10 to +11 (lag+11 is slightly higher), therefore it fits the conclusion solar cycle is ca. 11 years. However, the glass eel catches does not reflect obvious pattern of periodicity.
+```{r, warning = FALSE}
+par(mfrow = c(1, 2))
+acf(Sunspot)
+acf(Glass.eel)
+```
+
+Lastly, there is no significantly difference in catches associated with solar minimum and maximum. For the groups we separate (section **5.5**), although there is very high glass eel catches associated with high sunspot number, there are also extremely low catches associated with it. The surprisingly large standard deviation and outlines may responsible to the result. This may due to statistical bias when counting the total glass eel catch in Taiwan in the previous year, or there are multiple causes, such as ocean current speed. This may be one perspective of studying the connection of fish catches with solar activities.
+
+
+**7. Conclusion**  
+1. There is moderate positive correlation between sunspot number and glass eel catches in Taiwan.  
+2. There is no significantly difference in catches associated with solar minimum and maximum.  
+3. There is no lag response of glass eel catches in Taiwan and the solar activity.  
+
+**8. Acknowledgement**<br />
+We are grateful to Dr. Wann-Nian Tzeng, Professor and Emeritus of the
+Institute of Fisheries Science, National Taiwan University, for providing the raw data of this study. We thanks our classmates, Eric and Morris for providing advises.
+
+
+**9. Reference**<br />
+Nasa (2021) What Is Solar Cycle. Nasa Space Place. https://spaceplace.nasa.gov/solar-cycles/en/
+
+Sánchez-Santillán, N., Esquivel-Herrera, A., & Aldeco-Ramírez, J. (2019). Relation between the sharpnose shark Rhizoprinodon terranovae in the southern Gulf of Mexico and the average number of sunspots. Hidrobiológica, 29(1), 9-16.
+
+Trapletti A, Hornik K (2021). tseries: Time Series Analysis and Computational Finance. R package version 0.10-49.
+
+Wickham H (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4, https://ggplot2.tidyverse.org.
+
